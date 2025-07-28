@@ -1,4 +1,4 @@
-# esg_streamlit_app.py
+# streamlit_app.py
 
 import streamlit as st
 import os
@@ -6,26 +6,32 @@ from langchain_community.vectorstores import FAISS
 from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain.chains import RetrievalQA
 from langchain.prompts import PromptTemplate
-from langchain_community.llms import HuggingFaceHub
+from langchain_community.llms import HuggingFaceHub  # Optional, can be replaced with any other LLM
 
 # --- Configuration ---
-VECTOR_STORE = "./vector_store/"
-EMBED_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
-HF_API_TOKEN = st.secrets["HF_TOKEN"]  # set in Streamlit secrets
+VECTOR_STORE_PATH = os.path.join("..", "vector_store")  # Adjust if different
+EMBED_MODEL_NAME = "sentence-transformers/all-MiniLM-L6-v2"
 
-# --- Load Embedding and FAISS DBs ---
-@st.cache_resource(show_spinner=False)
-def load_vector_stores():
-    embedding = HuggingFaceEmbeddings(model_name=EMBED_MODEL)
-    db = FAISS.load_local(VECTOR_STORE, embedding, allow_dangerous_deserialization=True)
-    
-    return embedding, db
+# --- Initialize components ---
+@st.cache_resource
+def load_embedding():
+    return HuggingFaceEmbeddings(model_name=EMBED_MODEL_NAME)
 
-embedding, db = load_vector_stores()
+@st.cache_resource
+def load_vectorstore():
+    return FAISS.load_local(VECTOR_STORE_PATH, embedding, allow_dangerous_deserialization=True)
+
+@st.cache_resource
+def load_llm():
+    # Replace this with any LLM you're allowed to use (OpenAI, HuggingFaceHub, etc.)
+    return HuggingFaceHub(repo_id="google/flan-t5-base", model_kwargs={"temperature": 0.3, "max_length": 512})
+
+embedding = load_embedding()
+vectorstore = load_vectorstore()
+llm = load_llm()
 
 # --- Prompt Template ---
-prompt_template = PromptTemplate.from_template(
-    """
+prompt_template = PromptTemplate.from_template("""
 You are an ESG analyst. Use only the context provided below to answer the question.
 
 Context:
@@ -33,39 +39,37 @@ Context:
 
 Question: {question}
 
-Helpful Answer (focus only on the company in context, and do not hallucinate other companies):
-"""
+Helpful Answer:
+""")
+
+qa_chain = RetrievalQA.from_chain_type(
+    llm=llm,
+    retriever=vectorstore.as_retriever(search_kwargs={"k": 6}),
+    chain_type="stuff",
+    chain_type_kwargs={"prompt": prompt_template},
+    return_source_documents=True
 )
 
 # --- Streamlit UI ---
-st.set_page_config(page_title="ESG Profile Generator", layout="wide")
+st.set_page_config(page_title="ESG Company Profile", layout="wide")
 st.title("🌱 ESG Company Profile Generator")
 
-company = st.text_input("Enter Company Name (e.g., TCS, INFY, HDFCBANK)")
-custom_question = st.text_area("Optional: Custom Question", value="Generate ESG company profile")
-k = st.slider("Number of documents to search", min_value=2, max_value=10, value=4)
+company = st.text_input("Enter Company Name", value="TCS")
+question = st.text_area("Enter ESG-related question", value="Generate ESG company profile")
 
-if st.button("Generate ESG Profile") and company:
-    with st.spinner("Retrieving relevant information and generating profile..."):
-        docs = db.similarity_search(company, k=k)
-        documents = docs
+if st.button("Generate Profile"):
+    with st.spinner("Generating profile..."):
+        result = qa_chain.invoke({"query": f"{company} {question}"})
 
-        context = "\n\n".join([doc.page_content for doc in documents])
-        final_prompt = prompt_template.format(question=custom_question, context=context)
+        st.markdown("### ✅ ESG Profile")
+        st.markdown(result['result'])
 
-        llm = HuggingFaceHub(
-            repo_id="mistralai/Mistral-7B-Instruct-v0.1",
-            model_kwargs={"temperature": 0.2, "max_new_tokens": 512},
-            huggingfacehub_api_token=HF_API_TOKEN
-        )
-
-        response = llm.invoke(final_prompt)
-
-        st.markdown("## 🧾 ESG Profile")
-        st.markdown(response)
-
-        st.markdown("---")
-        st.markdown("## 📚 Sources")
-        for i, doc in enumerate(documents):
-            st.markdown(f"**{i+1}.** `{doc.metadata.get('source')}` | Page {doc.metadata.get('page')} | Year {doc.metadata.get('year')}")
-            st.caption(doc.page_content[:300] + "...")
+        st.markdown("### 📚 Sources")
+        for i, doc in enumerate(result["source_documents"], 1):
+            st.markdown(f"""
+            **Source {i}**
+            - 📄 **File**: {doc.metadata.get("source")}
+            - 📅 **Year**: {doc.metadata.get("year")}
+            - 📄 **Page**: {doc.metadata.get("page")}
+            - 📝 **Snippet**: `{doc.page_content[:300]}`...
+            """)

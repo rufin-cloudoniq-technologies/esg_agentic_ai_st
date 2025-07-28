@@ -12,7 +12,7 @@ from langchain_community.llms import HuggingFaceHub  # Optional, can be replaced
 os.environ["HUGGINGFACEHUB_API_TOKEN"] = st.secrets["HF_TOKEN"]
 
 # --- Configuration ---
-VECTOR_STORE_PATH = os.path.join("..", "vector_store")  # Adjust if different
+VECTOR_STORE_PATH = os.path.join(".", "vector_store")  # Adjust if different
 EMBED_MODEL_NAME = "sentence-transformers/all-MiniLM-L6-v2"
 
 # --- Initialize components ---

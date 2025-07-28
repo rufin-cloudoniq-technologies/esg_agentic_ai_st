@@ -4,7 +4,7 @@
 import os
 import streamlit as st
 # Set Hugging Face API Token if using hosted models
-os.environ["HUGGINGFACEHUB_API_TOKEN"] = st.secrets["HUGGINGFACEHUB_API_TOKEN"]
+os.environ["HUGGINGFACEHUB_API_TOKEN"] = st.secrets("HUGGINGFACEHUB_API_TOKEN")
 from langchain_community.vectorstores import FAISS
 from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain.chains import RetrievalQA

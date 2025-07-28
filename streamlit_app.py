@@ -9,8 +9,7 @@ from langchain.prompts import PromptTemplate
 from langchain_community.llms import HuggingFaceHub
 
 # --- Configuration ---
-VECTOR_STORE_TEXT = "./vector_store/text"
-VECTOR_STORE_TABLE = "./vector_store/tables"
+VECTOR_STORE = "./vector_store/"
 EMBED_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
 HF_API_TOKEN = st.secrets["HF_TOKEN"]  # set in Streamlit secrets
 
@@ -18,11 +17,11 @@ HF_API_TOKEN = st.secrets["HF_TOKEN"]  # set in Streamlit secrets
 @st.cache_resource(show_spinner=False)
 def load_vector_stores():
     embedding = HuggingFaceEmbeddings(model_name=EMBED_MODEL)
-    db_text = FAISS.load_local(VECTOR_STORE_TEXT, embedding, allow_dangerous_deserialization=True)
-    db_table = FAISS.load_local(VECTOR_STORE_TABLE, embedding, allow_dangerous_deserialization=True)
-    return embedding, db_text, db_table
+    db = FAISS.load_local(VECTOR_STORE, embedding, allow_dangerous_deserialization=True)
+    
+    return embedding, db
 
-embedding, db_text, db_table = load_vector_stores()
+embedding, db = load_vector_stores()
 
 # --- Prompt Template ---
 prompt_template = PromptTemplate.from_template(
@@ -48,9 +47,8 @@ k = st.slider("Number of documents to search", min_value=2, max_value=10, value=
 
 if st.button("Generate ESG Profile") and company:
     with st.spinner("Retrieving relevant information and generating profile..."):
-        docs_text = db_text.similarity_search(company, k=k)
-        docs_table = db_table.similarity_search(company, k=k)
-        documents = docs_text + docs_table
+        docs = db.similarity_search(company, k=k)
+        documents = docs
 
         context = "\n\n".join([doc.page_content for doc in documents])
         final_prompt = prompt_template.format(question=custom_question, context=context)

@@ -8,6 +8,9 @@ from langchain.chains import RetrievalQA
 from langchain.prompts import PromptTemplate
 from langchain_community.llms import HuggingFaceHub  # Optional, can be replaced with any other LLM
 
+# Set Hugging Face API Token if using hosted models
+os.environ["HUGGINGFACEHUB_API_TOKEN"] = st.secrets["HF_TOKEN"]
+
 # --- Configuration ---
 VECTOR_STORE_PATH = os.path.join("..", "vector_store")  # Adjust if different
 EMBED_MODEL_NAME = "sentence-transformers/all-MiniLM-L6-v2"

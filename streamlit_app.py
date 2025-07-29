@@ -1,17 +1,17 @@
 # streamlit_app.py
 
 
-import os
-import streamlit as st
-# Set Hugging Face API Token if using hosted models
-os.environ["HUGGINGFACEHUB_API_TOKEN"] = st.secrets["HUGGINGFACEHUB_API_TOKEN"]
+
 from langchain_community.vectorstores import FAISS
 from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain.chains import RetrievalQA
 from langchain.prompts import PromptTemplate
 from langchain_community.llms import HuggingFaceHub  # Optional, can be replaced with any other LLM
+import os
+import streamlit as st
 
-
+# Correct way to set the token from Streamlit secrets
+os.environ["HUGGINGFACEHUB_API_TOKEN"] = st.secrets["HUGGINGFACEHUB_API_TOKEN"]
 
 # --- Configuration ---
 VECTOR_STORE_PATH = os.path.join(".", "vector_store")  # Adjust if different
@@ -29,7 +29,7 @@ def load_vectorstore():
 @st.cache_resource
 def load_llm():
     # Replace this with any LLM you're allowed to use (OpenAI, HuggingFaceHub, etc.)
-    return HuggingFaceHub(repo_id="google/flan-t5-base", model_kwargs={"temperature": 0.3, "max_length": 512})
+    return HuggingFaceHub(repo_id="google/flan-t5-base", model_kwargs={"temperature": 0.3, "max_length": 512}, task="text2text-generation")
 
 embedding = load_embedding()
 vectorstore = load_vectorstore()

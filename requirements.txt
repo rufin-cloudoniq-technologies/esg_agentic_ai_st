@@ -1,6 +1,7 @@
 streamlit
-langchain>=0.2.1
-langchain-community>=0.2.0
-faiss-cpu
+langchain
+transformers
+torch
 sentence-transformers
-huggingface-hub
+faiss-cpu
+

@@ -23,7 +23,7 @@ def load_embedding():
     return HuggingFaceEmbeddings(model_name=EMBED_MODEL_NAME)
 
 @st.cache_resource
-def load_vectorstore(embedding):
+def load_vectorstore(_embedding):
     return FAISS.load_local(VECTOR_STORE_PATH, embedding, allow_dangerous_deserialization=True)
 
 @st.cache_resource

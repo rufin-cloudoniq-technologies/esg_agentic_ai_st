@@ -44,14 +44,20 @@ llm = load_llm()
 
 # --- Prompt Template ---
 prompt_template = PromptTemplate.from_template("""
-You are an ESG analyst. Use only the context provided below to answer the question.
+You are a Financial Analyst tasked with providing clear, concise, and accurate answers using only the context provided.
+
+Instructions:
+- Analyze the content strictly within the financial context.
+- Do NOT fabricate numbers or financial metrics.
+- Focus on company performance, ESG metrics, risks, opportunities, and trends if mentioned.
+- Your answer must be data-grounded and business-relevant.
 
 Context:
 {context}
 
 Question: {question}
 
-Helpful Answer:
+Financial Analyst’s Answer:
 """)
 
 # --- Build QA Chain ---
